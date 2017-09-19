@@ -14,7 +14,8 @@
         fill: white;
     }
 
-    .label, .titleLable {
+    .label,
+    .titleLable {
         font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
         text-anchor: middle;
         text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
@@ -22,7 +23,7 @@
 
     .titleLable {
         font: 10px;
-        color:chocolate;
+        color: chocolate;
     }
 
     .label,
@@ -39,21 +40,21 @@
         .outerRadius(100)
         .startAngle(0)
         .endAngle(Math.PI / 2);
-    
-        // http://jsfiddle.net/VividD/zGME5/
-    function describeArc(x, y, radius, startAngle, endAngle){
+
+    // http://jsfiddle.net/VividD/zGME5/
+    function describeArc(x, y, radius, startAngle, endAngle) {
         var start = polarToCartesian(x, y, radius, endAngle);
         var end = polarToCartesian(x, y, radius, startAngle);
         var arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
         var d = [
-            "M", start.x, start.y, 
+            "M", start.x, start.y,
             "A", radius, radius, 0, 1, 1, end.x, end.y
         ].join(" ");
         return d;
     }
 
     function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-        var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+        var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
         return {
             x: centerX + (radius * Math.cos(angleInRadians)),
             y: centerY + (radius * Math.sin(angleInRadians))
@@ -92,57 +93,28 @@
             view,
             zoomValue;
 
-        var circle = g.selectAll("circle");
-        var circleGroup = g.selectAll(".circleGroup")
+        var circle = g.selectAll("circle")
             .data(nodes)
             .enter()
             .append("g")
-            .attr("id",function(d){
+            .attr("id", function (d) {
                 return "circle_group_" + d.data.Name;
             })
-            .attr("class","group_zoom zoom")
-            //
-            .each(function(d, i) {
-                    
-                var nestedCircle = d3.select(this)
-                    .append("circle")
-                    .attr('id', function (d) {
-                        return "circle_" + d.data.Name
-                    })
-                    .attr("class", function (d) {
-                        return (d.parent ? d.children ? "node" : "node node--leaf" : "node node--root");
-                    })
-                    .attr("r", function (d) {
-                        var v = [root.x, root.y, root.r * 2 + margin];
-                        var k = diameter / v[2];
-                        return d.r * k;
-                    })
-                    .style("fill", function (d) {
-                        return d.children ? color(d.depth) : null;
-                    })
-                    .on("click", function (d) {
-                        if (focus !== d) zoom(d), d3.event.stopPropagation();
-                    });
-                
-                var nestedPath = d3.select(this)
-                // .selectAll('path.area')
-                    // .data([d])
-                    .append("path")
-                    .attr("id", function (d) {
-                            return "arc_" + d.data.Name
-                        }) //very important to give the path element a unique ID to reference later
-                    .attr("d", function(d,i) {
-                        // return describeArc(d.x, d.y, d.r, 160, -160)
-                        
-                        return describeArc(0, 0, d.r, 160, -160)
-                    }) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
-                    .attr("class", "zoom")
-                    .style("fill", "none")
-                    .style("stroke", "#AAAAAA")
-                    .style("stroke-width", "1.5px")
+            .attr("class", "group_zoom zoom")
+            .append("circle")
+            .attr('id', function (d) {
+                return "circle_" + d.data.Name
             })
-            //
-
+            .attr("class", function (d) {
+                return (d.parent ? d.children ? "node" : "node node--leaf" : "node node--root");
+            })
+            .style("fill", function (d) {
+                return d.children ? color(d.depth) : null;
+            })
+            .on("click", function (d) {
+                if (focus !== d) zoom(d), d3.event.stopPropagation();
+            });
+        //
 
         var text = g.selectAll(".textTitle")
             .data(nodes)
@@ -161,22 +133,28 @@
         //Create the SVG
 
         //Create an SVG path
-        // var svgTextArc = g.selectAll("group_zoom")
-        //     .data(nodes)
-        //     .enter().append("path")
-        //     .attr("id", function (d) {
-        //             return "arc_" + d.data.Name
-        //         }) //very important to give the path element a unique ID to reference later
-        //     .attr("d", function(d,i) {
-        //         // return describeArc(d.x, d.y, d.r, 160, -160)
-                
-        //         return describeArc(0, 0, d.r, 160, -160)
-        //     }) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
-        //     .attr("class", "zoom")
-        //     .style("fill", "none")
-        //     .style("stroke", "#AAAAAA")
-        //     .style("stroke-width", "1.5px");
-    
+        var svgTextArc = g.selectAll("group_zoom")
+            .data(nodes)
+            .enter().append("path")
+            .attr("id", function (d) {
+                    return "arc_" + d.data.Name
+                }) //very important to give the path element a unique ID to reference later
+            .attr("d", function(d,i) {
+                // return describeArc(d.x, d.y, d.r, 160, -160)
+
+                return describeArc(0, 0, d.r, 160, -160)
+            }) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+            .attr("class", "zoom")
+            .style("fill", "none")
+            .style("stroke", "none")
+            .style("stroke-width", "1.5px")
+            .style("fill-opacity", function (d) {
+                return d.parent === root ? 1 : 0;
+            })
+            .style("display", function (d) {
+                return d.parent === root ? "inline" : "none";
+            });
+
         //Create an SVG text element and append a textPath element
         var svgTextTitle = g.selectAll(".arcTitle")
             .data(nodes)
@@ -185,8 +163,8 @@
             .attr("xlink:href", function (d) {
                 return "#arc_" + d.data.Name
             }) //place the ID of the path here
-            .attr("class","titleLable")
-            .style("text-anchor","middle") //place the text halfway on the arc
+            .attr("class", "titleLable")
+            .style("text-anchor", "middle") //place the text halfway on the arc
             .attr("startOffset", "50%")
             .text(function (d) {
                 return 'Unit: ' + zeroPad(d.data.BUSINESS_UNIT, 3) + '.' +
@@ -217,7 +195,7 @@
                     };
                 });
 
-                transition.selectAll("text")
+            transition.selectAll("text")
                 .filter(function (d) {
                     return d.parent === focus || this.style.display === "inline";
                 })
@@ -231,25 +209,21 @@
                     if (d.parent !== focus) this.style.display = "none";
                 });
 
-            // transition.selectAll("path")
-            //     .filter(function (d) {
-            //         return d.parent === focus || this.style.display === "inline";
-            //     })
-            //     .style("fill-opacity", function (d) {
-            //         return d.parent === focus ? 1 : 0;
-            //     })
-            //     // .attr("transform",function(d) {
-            //     //     //var k = diameter / view[2];
-            //     //     return "scale(" + zoomValue + ")";
-            //     // })
-            //     .on("start", function (d) {
-            //         if (d.parent === focus) this.style.display = "inline";
-            //     })
-            //     .on("end", function (d) {
-            //         var v = view;
-            //         if (d.parent !== focus) this.style.display = "none";
-                    
-            //     });
+            transition.selectAll("path")
+                .filter(function (d) {
+                    return d.parent === focus || this.style.display === "inline";
+                })
+                .style("fill-opacity", function (d) {
+                    return d.parent === focus ? 1 : 0;
+                })
+                .on("start", function (d) {
+                    if (d.parent === focus) this.style.display = "inline";
+                })
+                .on("end", function (d) {
+                    var v = view;
+                    if (d.parent !== focus) this.style.display = "none";
+
+                });
         }
 
         function zoomTo(v) {
@@ -261,6 +235,10 @@
             circle.attr("r", function (d) {
                 zoomValue = d.r * k;
                 return d.r * k;
+            });
+
+            svgTextArc.attr("transform", function (d) {
+                return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ") scale(" + k + ")";
             });
         }
     });
@@ -299,5 +277,4 @@
         var zero = places - num.toString().length + 1;
         return Array(+(zero > 0 && zero)).join("0") + num;
     }
-
 </script>
