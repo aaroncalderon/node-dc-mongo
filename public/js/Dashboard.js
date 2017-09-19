@@ -118,13 +118,31 @@ console.log(maxDate);
 		//.width(300)
 		.height(220)
         .dimension(povertyLevel)
+        .ordering(function(d){
+          var order;
+          if (d.key == 'highest poverty') { order = 4}
+            else if (d.key == 'high poverty') { order = 3}
+            else if (d.key == 'moderate poverty') { order = 2}
+            else if (d.key == 'low poverty') { order = 1}
+            else { order = 0};
+          return -order;
+          })
         .group(projectsByPovertyLevel)
         .xAxis().ticks(4);
-
+  
 	gradeLevelChart
 		//.width(300)
 		.height(220)
         .dimension(gradeLevel)
+        .ordering(function(d){
+          var order;
+          if (d.key == 'Grades 9-12') { order = 4}
+            else if (d.key == 'Grades 6-8') { order = 3}
+            else if (d.key == 'Grades 3-5') { order = 2}
+            else if (d.key == 'Grades PreK-2') { order = 1}
+            else { order = 0};
+          return -order;
+          })
         .group(projectsByGrade)
         .xAxis().ticks(4);
 

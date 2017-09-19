@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+    .node {
+        cursor: pointer;
+    }
+
+    .node:hover {
+        stroke: #000;
+        stroke-width: 1.5px;
+    }
+
+    .node--leaf {
+        fill: white;
+    }
+
+    .label, .titleLable {
+        font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
+        text-anchor: middle;
+        text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 -1px 0 #fff;
+    }
+
+    .titleLable {
+        font: 10px;
+        color:chocolate;
+    }
+
+    .label,
+    .node--root,
+    .node--leaf {
+        pointer-events: none;
+    }
+</style>
+<svg width="600" height="600"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+    var arc = d3.arc()
+        .innerRadius(0)
+        .outerRadius(100)
+        .startAngle(0)
+        .endAngle(Math.PI / 2);
+    
+        // http://jsfiddle.net/VividD/zGME5/
+    function describeArc(x, y, radius, startAngle, endAngle){
+        var start = polarToCartesian(x, y, radius, endAngle);
+        var end = polarToCartesian(x, y, radius, startAngle);
+        var arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
+        var d = [
+            "M", start.x, start.y, 
+            "A", radius, radius, 0, 1, 1, end.x, end.y
+        ].join(" ");
+        return d;
+    }
+
+    function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+        var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+        return {
+            x: centerX + (radius * Math.cos(angleInRadians)),
+            y: centerY + (radius * Math.sin(angleInRadians))
+        };
+    }
+
+    var svg = d3.select("svg"),
+        margin = 20,
+        diameter = +svg.attr("width"),
+        g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
+
+    var color = d3.scaleLinear()
+        .domain([-1, 5])
+        .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
+        .interpolate(d3.interpolateHcl);
+
+    var pack = d3.pack()
+        .size([diameter - margin, diameter - margin])
+        .padding(2);
+
+    d3.json("/api/data", function (error, root) {
+        if (error) throw error;
+        // make it a hierarchy
+        root = flatToHierarchy(root)
+
+        root = d3.hierarchy(root)
+            .sum(function (d) {
+                return d.Name;
+            })
+            .sort(function (a, b) {
+                return b.value - a.value;
+            });
+
+        var focus = root,
+            nodes = pack(root).descendants(),
+            view,
+            zoomValue;
+
+        var circle = g.selectAll("circle")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("id",function(d){
+                return "circle_group_" + d.data.name;
+            })
+            .attr("class","group_zoom zoom")
+            .append("circle")
+            .attr('id', function (d) {
+                return "circle_" + d.data.Name
+            })
+            .attr("class", function (d) {
+                return (d.parent ? d.children ? "node" : "node node--leaf" : "node node--root");
+            })
+            .style("fill", function (d) {
+                return d.children ? color(d.depth) : null;
+            })
+            .on("click", function (d) {
+                if (focus !== d) zoom(d), d3.event.stopPropagation();
+            });
+
+
+        var text = g.selectAll(".textTitle")
+            .data(nodes)
+            .enter().append("text")
+            .attr("class", "label zoom")
+            .style("fill-opacity", function (d) {
+                return d.parent === root ? 1 : 0;
+            })
+            .style("display", function (d) {
+                return d.parent === root ? "inline" : "none";
+            })
+            .text(function (d) {
+                return d.data.FIRST_NAME + ' ' + d.data.LAST_NAME; // lable
+            });
+
+        var svgTextArc = g.selectAll('.solo')
+            .data(nodes)
+            .enter().select(function(d) {
+                return "#circle_group_" + d.data.Name;
+            })
+            // .enter().select(function(d) {
+            //     return "#circle_group_" + d.data.Name;
+            // })
+            .append("pathh")
+            .attr("id", function (d) {
+                    return "arc_" + d.data.Name
+                }) //very important to give the path element a unique ID to reference later
+            .attr("d", function(d,i) {
+                // return describeArc(d.x, d.y, d.r, 160, -160)
+                
+                return describeArc(0, 0, d.r, 160, -160)
+            }) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+            .attr("class", "zoom")
+            .style("fill", "none")
+            .style("stroke", "#AAAAAA")
+            .style("stroke-width", "1.5px");
+
+        
+        //Create the SVG
+
+        //Create an SVG path
+        // var svgTextArc = g.selectAll("group_zoom")
+        //     .data(nodes)
+        //     .enter().append("path")
+        //     .attr("id", function (d) {
+        //             return "arc_" + d.data.Name
+        //         }) //very important to give the path element a unique ID to reference later
+        //     .attr("d", function(d,i) {
+        //         // return describeArc(d.x, d.y, d.r, 160, -160)
+                
+        //         return describeArc(0, 0, d.r, 160, -160)
+        //     }) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+        //     .attr("class", "zoom")
+        //     .style("fill", "none")
+        //     .style("stroke", "#AAAAAA")
+        //     .style("stroke-width", "1.5px");
+    
+        //Create an SVG text element and append a textPath element
+        var svgTextTitle = g.selectAll(".arcTitle")
+            .data(nodes)
+            .enter().append("text")
+            .append("textPath") //append a textPath to the text element
+            .attr("xlink:href", function (d) {
+                return "#arc_" + d.data.Name
+            }) //place the ID of the path here
+            .attr("class","titleLable")
+            .style("text-anchor","middle") //place the text halfway on the arc
+            .attr("startOffset", "50%")
+            .text(function (d) {
+                return 'Unit: ' + zeroPad(d.data.BUSINESS_UNIT, 3) + '.' +
+                    'POS: ' + zeroPad(d.data.Name, 8) + '.' +
+                    'Name: ' + d.data.FIRST_NAME + ' ' + d.data.LAST_NAME; // lable
+            });
+
+        var node = g.selectAll(".zoom");
+
+        svg
+            .style("background", color(-1))
+            .on("click", function () {
+                zoom(root);
+            });
+
+        zoomTo([root.x, root.y, root.r * 2 + margin]);
+
+        function zoom(d) {
+            var focus0 = focus;
+            focus = d;
+
+            var transition = d3.transition()
+                .duration(d3.event.altKey ? 7500 : 750)
+                .tween("zoom", function (d) {
+                    var i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2 + margin]);
+                    return function (t) {
+                        zoomTo(i(t));
+                    };
+                });
+
+                transition.selectAll("text")
+                .filter(function (d) {
+                    return d.parent === focus || this.style.display === "inline";
+                })
+                .style("fill-opacity", function (d) {
+                    return d.parent === focus ? 1 : 0;
+                })
+                .on("start", function (d) {
+                    if (d.parent === focus) this.style.display = "inline";
+                })
+                .on("end", function (d) {
+                    if (d.parent !== focus) this.style.display = "none";
+                });
+
+            transition.selectAll("path")
+                .filter(function (d) {
+                    return d.parent === focus || this.style.display === "inline";
+                })
+                .style("fill-opacity", function (d) {
+                    return d.parent === focus ? 1 : 0;
+                })
+                // .attr("transform",function(d) {
+                //     //var k = diameter / view[2];
+                //     return "scale(" + zoomValue + ")";
+                // })
+                .on("start", function (d) {
+                    if (d.parent === focus) this.style.display = "inline";
+                })
+                .on("end", function (d) {
+                    var v = view;
+                    if (d.parent !== focus) this.style.display = "none";
+                    
+                });
+        }
+
+        function zoomTo(v) {
+            var k = diameter / v[2];
+            view = v;
+            node.attr("transform", function (d) {
+                return "translate(" + (d.x - v[0]) * k + "," + (d.y - v[1]) * k + ")";
+            });
+            circle.attr("r", function (d) {
+                zoomValue = d.r * k;
+                return d.r * k;
+            });
+        }
+    });
+
+    // https://stackoverflow.com/questions/30926539/organization-chart-tree-online-dynamic-collapsible-pictures-in-d3
+    function flatToHierarchy(flat) {
+
+        var roots = [] // things without ["Reports-To"]
+
+        // make them accessible by Name on this map
+        var all = {}
+
+        flat.forEach(function (item) {
+            all[item.Name] = item
+        })
+
+        // connect childrens to its ["Reports-To"], and split roots apart
+        Object.keys(all).forEach(function (Name) {
+            var item = all[Name]
+            if (item["Reports-To"] === null || item["Reports-To"] === '') {
+                roots.push(item)
+            } else if (item["Reports-To"] in all) {
+                var p = all[item["Reports-To"]]
+                if (!('children' in p)) {
+                    p.children = []
+                }
+                p.children.push(item)
+            }
+        })
+
+        // done!
+        return roots['0']
+    }
+
+    function zeroPad(num, places) {
+        var zero = places - num.toString().length + 1;
+        return Array(+(zero > 0 && zero)).join("0") + num;
+    }
+
+</script>
