@@ -177,14 +177,14 @@
             }) //place the ID of the path here
             .attr("class", "titleLable arcText")
             .style("fill-opacity", function (d) {
-                if (d.data.Name == "650") {
-                    console.log("Nixon")
+                if (d.data.Name == "target") {
+                    console.log("target")
                 }
                 return d.parent === root ? 1 : 0.5; //opacity
             })
             .style("display", function (d) {
-                if (d.data.Name == "650") {
-                    console.log("Nixon")
+                if (d.data.Name == "target") {
+                    console.log("target")
                 }
                 return d.parent === root ? "inline" : "inline";// display none
             })
@@ -239,13 +239,13 @@
                         d.data.Name,
                         d.depth
                     )
-                    if (focus.data.Name == "650") console.log(
+                    if (focus.data.Name == "target") console.log(
                         focus.depth <= d.depth,
                         focus.data.Name,
                         focus.depth,
                         d.data.Name,
                         d.depth,
-                        "Nixon"
+                        "target"
                     )
                     if (d.parent !== focus || focus.d) this.style.display = "inline";// display none
                 });
